@@ -9,10 +9,32 @@ import { analyzeIncidentWithGroq } from "./groq";
  * 3. Analyze current incident + memories using Groq LLM
  * 4. Retain new incident and diagnosis in Hindsight for future learning
  */
+export function buildRecallQuery(incident: EngineeringIncident): string {
+  const parts = [
+    incident.machineName,
+    incident.machineType,
+    incident.problem,
+    Array.isArray(incident.symptoms) ? incident.symptoms.join(" ") : "",
+    incident.operatingConditions || "",
+    incident.temperature || "",
+    incident.recentChanges || "",
+    incident.previousActions || "",
+    incident.additionalNotes || "",
+  ];
+  return parts.filter((p) => Boolean(p && p.trim())).join(" ").trim();
+}
+
+/**
+ * End-to-end incident investigation pipeline:
+ * 1. Understand incoming incident & symptoms
+ * 2. Recall relevant historical memories from Hindsight
+ * 3. Analyze current incident + memories using Groq LLM
+ * 4. Retain new incident and diagnosis in Hindsight for future learning
+ */
 export async function processIncidentPipeline(
   incident: EngineeringIncident
 ): Promise<IncidentPipelineResult> {
-  const query = `${incident.machineType} ${incident.machineName} ${incident.problem} ${incident.symptoms.join(" ")}`.trim();
+  const query = buildRecallQuery(incident);
 
   // 1. Recall historical memories
   const recalledMemories = await recallRelevantIncidents(query);

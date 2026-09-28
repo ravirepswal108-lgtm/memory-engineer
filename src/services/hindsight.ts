@@ -97,16 +97,18 @@ export async function retainIncident(
   }
 
   const memoryContent = `
-[INCIDENT LOG]
-Machine: ${incident.machineName} (${incident.machineType})
-Problem: ${incident.problem}
-Symptoms: ${incident.symptoms.join(", ")}
+[ENGINEERING EQUIPMENT INCIDENT]
+Machine Name: ${incident.machineName}
+Machine Type: ${incident.machineType}
+Primary Problem: ${incident.problem}
+Symptoms: ${Array.isArray(incident.symptoms) ? incident.symptoms.join(", ") : ""}
 Operating Conditions: ${incident.operatingConditions || "Standard"}
-Temperature: ${incident.temperature || "N/A"}
-Recent Changes: ${incident.recentChanges || "None"}
-Previous Actions: ${incident.previousActions || "None"}
+Operating Temperature: ${incident.temperature || "N/A"}
+Recent Maintenance / Changes: ${incident.recentChanges || "None reported"}
+Previous Diagnostic Actions: ${incident.previousActions || "None reported"}
+Additional Notes: ${incident.additionalNotes || "None"}
 
-[ENGINEERING ANALYSIS & DIAGNOSIS]
+[DIAGNOSIS & ANALYSIS]
 Summary: ${analysis.incidentSummary}
 Possible Causes: ${analysis.possibleCauses.join("; ")}
 Recommended Checks: ${analysis.recommendedChecks.join("; ")}
@@ -119,7 +121,7 @@ Uncertainty: ${analysis.uncertaintyExplanation}
     const client = getHindsightClient();
     await client.retain(config.hindsightBankId, memoryContent, {
       timestamp: new Date(),
-      context: `Incident Analysis for ${incident.machineName} (${incident.machineType})`,
+      context: "engineering equipment incident",
       metadata: {
         machineName: incident.machineName,
         machineType: incident.machineType,

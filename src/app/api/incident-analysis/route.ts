@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { validateIncidentInput, EngineeringIncident } from "@/types/incident";
 import { recallRelevantIncidents, retainIncident } from "@/services/hindsight";
 import { analyzeIncidentWithGroq } from "@/services/groq";
+import { buildRecallQuery } from "@/services/incident";
 
 export async function POST(request: Request) {
   try {
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
     const incident = body as EngineeringIncident;
 
     // 2. Formulate query for Hindsight recall
-    const recallQuery = `${incident.machineType} ${incident.machineName} ${incident.problem} ${incident.symptoms.join(" ")}`.trim();
+    const recallQuery = buildRecallQuery(incident);
 
     // 3. Recall relevant historical memories from Hindsight
     const recalledMemories = await recallRelevantIncidents(recallQuery);
