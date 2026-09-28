@@ -26,18 +26,57 @@ export interface RecalledMemory {
 export interface HistoricalMatch {
   summary: string;
   relevanceReason: string;
+  incidentId?: string;
+  outcome?: string;
+}
+
+export interface ActionChecklistItem {
+  action: string;
+  priority: "HIGH" | "MEDIUM" | "LOW";
+  reason: string;
+  relatedExperience?: string;
 }
 
 export interface StructuredIncidentAnalysis {
   incidentSummary: string;
   possibleCauses: string[];
   historicalMatches: HistoricalMatch[];
+  historicalEvidence?: string[];
   recommendedChecks: string[];
   recommendedActions: string[];
+  actionChecklist?: ActionChecklistItem[];
   confidenceExplanation: string;
   uncertaintyExplanation: string;
   relevantMemoriesUsed: string[];
   confidenceScore?: number;
+}
+
+export interface SystemStatus {
+  hindsightConnected: boolean;
+  groqConnected: boolean;
+  bankName: string;
+  lastRecallTimestamp?: string;
+  lastRetainTimestamp?: string;
+  memoriesRetrievedCount: number;
+}
+
+export interface PipelineStepInfo {
+  step: number;
+  label: string;
+  description: string;
+  status: "idle" | "running" | "completed" | "error";
+}
+
+export interface IncidentHistoryRecord {
+  id: string;
+  timestamp: string;
+  machineName: string;
+  machineType: string;
+  problem: string;
+  outcome?: string;
+  memoryStatus: "RETAINED" | "RECALLED_AND_RETAINED" | "PENDING";
+  analysis: StructuredIncidentAnalysis;
+  recalledMemories: RecalledMemory[];
 }
 
 export interface IncidentPipelineResult {

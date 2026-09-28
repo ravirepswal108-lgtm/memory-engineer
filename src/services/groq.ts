@@ -50,8 +50,9 @@ Analyze the CURRENT INCIDENT using both real-time telemetry/facts AND historical
 CRITICAL INSTRUCTIONS:
 1. Clearly distinguish between CURRENT INCIDENT FACTS and HISTORICAL MEMORIES.
 2. Treat historical memories as prior experience/context, NOT guaranteed facts for the current machine.
-3. Assess possible causes and explicit diagnostic checks based on pattern matches.
-4. Express uncertainty and confidence explicitly.
+3. Use restrained, objective engineering language: "Recommended check", "Possible cause", "Historical evidence suggests". Never state diagnoses as 100% guaranteed.
+4. Provide a structured actionChecklist with explicit priorities ("HIGH", "MEDIUM", "LOW"), practical engineering reasons, and references to historical experience where available.
+5. Provide explicit historicalEvidence strings summarizing key evidence extracted from Hindsight memories.
 
 --- CURRENT INCIDENT FACTS ---
 Machine Name: ${incident.machineName}
@@ -71,6 +72,7 @@ Return ONLY a single valid JSON object strictly conforming to this schema (no ex
 {
   "incidentSummary": "Concise summary of current equipment anomaly",
   "possibleCauses": ["Possible root cause 1", "Possible root cause 2"],
+  "historicalEvidence": ["Historical evidence points from past memory 1"],
   "historicalMatches": [
     {
       "summary": "Brief summary of past similar incident retrieved from memory",
@@ -79,6 +81,14 @@ Return ONLY a single valid JSON object strictly conforming to this schema (no ex
   ],
   "recommendedChecks": ["Step-by-step physical/sensor check 1", "Verification step 2"],
   "recommendedActions": ["Immediate corrective action 1", "Maintenance mitigation action 2"],
+  "actionChecklist": [
+    {
+      "action": "Inspect cooling airflow and clean mesh filter",
+      "priority": "HIGH",
+      "reason": "Airflow restriction directly correlates with thermal spike pattern observed in previous incidents",
+      "relatedExperience": "INCIDENT #014 - CNC Spindle motor overheating"
+    }
+  ],
   "confidenceExplanation": "Explanation of reasoning confidence based on symptom overlap and memory alignment",
   "uncertaintyExplanation": "Explanation of remaining unknowns, missing telemetry, or potential alternative causes",
   "relevantMemoriesUsed": ["Excerpt or title of memory 1 used in this reasoning"],
@@ -106,12 +116,23 @@ Return ONLY a single valid JSON object strictly conforming to this schema (no ex
     const content = response.choices[0]?.message?.content || "{}";
     const parsed = JSON.parse(content) as Partial<StructuredIncidentAnalysis>;
 
+    const recommendedActions = Array.isArray(parsed.recommendedActions) ? parsed.recommendedActions : ["Isolate machine and inspect components."];
+
+    const defaultChecklist = recommendedActions.map((act, i) => ({
+      action: act,
+      priority: (i === 0 ? "HIGH" : i === 1 ? "MEDIUM" : "LOW") as "HIGH" | "MEDIUM" | "LOW",
+      reason: "Standard recommended engineering check based on observed telemetry",
+      relatedExperience: parsed.relevantMemoriesUsed?.[0] || "General Reliability Pattern",
+    }));
+
     return {
       incidentSummary: parsed.incidentSummary || `Incident analysis for ${incident.machineName}`,
-      possibleCauses: Array.isArray(parsed.possibleCauses) ? parsed.possibleCauses : ["Unspecified mechanical or electrical issue."],
+      possibleCauses: Array.isArray(parsed.possibleCauses) ? parsed.possibleCauses : ["Possible mechanical or electrical issue."],
+      historicalEvidence: Array.isArray(parsed.historicalEvidence) ? parsed.historicalEvidence : [],
       historicalMatches: Array.isArray(parsed.historicalMatches) ? parsed.historicalMatches : [],
       recommendedChecks: Array.isArray(parsed.recommendedChecks) ? parsed.recommendedChecks : ["Perform visual inspection."],
-      recommendedActions: Array.isArray(parsed.recommendedActions) ? parsed.recommendedActions : ["Isolate machine and inspect components."],
+      recommendedActions,
+      actionChecklist: Array.isArray(parsed.actionChecklist) && parsed.actionChecklist.length > 0 ? parsed.actionChecklist : defaultChecklist,
       confidenceExplanation: parsed.confidenceExplanation || "Analysis derived from current symptoms and historical memory context.",
       uncertaintyExplanation: parsed.uncertaintyExplanation || "Further on-site diagnostic telemetry required to verify root cause.",
       relevantMemoriesUsed: Array.isArray(parsed.relevantMemoriesUsed) ? parsed.relevantMemoriesUsed : [],

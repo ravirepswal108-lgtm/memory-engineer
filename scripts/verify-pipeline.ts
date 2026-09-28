@@ -127,7 +127,7 @@ async function runPipelineVerification() {
 
       const groqResult = await analyzeIncidentWithGroq(syntheticIncidentB, recalledForB);
       groqConnectionPass = true;
-      console.log("7. REAL GROQ CONNECTION TEST: PASS");
+      console.log("7. REAL GROQ CONNECTION TEST: PASS (Analysis summary: " + groqResult.incidentSummary + ")");
 
       if (recalledForB.length > 0) {
         groqMemoriesPass = true;
