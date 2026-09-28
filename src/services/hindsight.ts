@@ -33,27 +33,48 @@ export async function recallRelevantIncidents(query: string): Promise<RecalledMe
 
   try {
     const client = getHindsightClient();
-    const results = await client.recall(config.hindsightBankId, query);
+    const rawResponse = await client.recall(config.hindsightBankId, query);
 
-    if (Array.isArray(results)) {
-      return results.map((item: unknown) => {
-        if (typeof item === "string") {
-          return { content: item };
-        }
-        if (typeof item === "object" && item !== null) {
-          const obj = item as Record<string, unknown>;
-          return {
-            id: typeof obj.id === "string" ? obj.id : undefined,
-            content: typeof obj.content === "string" ? obj.content : JSON.stringify(obj),
-            relevanceScore: typeof obj.score === "number" ? obj.score : undefined,
-            metadata: typeof obj.metadata === "object" ? (obj.metadata as Record<string, unknown>) : undefined,
-          };
-        }
-        return { content: String(item) };
-      });
-    }
+    const items = Array.isArray(rawResponse)
+      ? rawResponse
+      : typeof rawResponse === "object" && rawResponse !== null && Array.isArray((rawResponse as Record<string, unknown>).results)
+      ? ((rawResponse as Record<string, unknown>).results as unknown[])
+      : [];
 
-    return [];
+    return items.map((item: unknown) => {
+      if (typeof item === "string") {
+        return { content: item };
+      }
+      if (typeof item === "object" && item !== null) {
+        const obj = item as Record<string, unknown>;
+        const contentStr =
+          typeof obj.content === "string"
+            ? obj.content
+            : typeof obj.text === "string"
+            ? obj.text
+            : JSON.stringify(obj);
+
+        const score =
+          typeof obj.score === "number"
+            ? obj.score
+            : typeof obj.scores === "object" &&
+              obj.scores !== null &&
+              typeof (obj.scores as Record<string, unknown>).final === "number"
+            ? ((obj.scores as Record<string, unknown>).final as number)
+            : undefined;
+
+        return {
+          id: typeof obj.id === "string" ? obj.id : undefined,
+          content: contentStr,
+          relevanceScore: score,
+          metadata:
+            typeof obj.metadata === "object"
+              ? (obj.metadata as Record<string, unknown>)
+              : undefined,
+        };
+      }
+      return { content: String(item) };
+    });
   } catch (error: unknown) {
     const errMessage = error instanceof Error ? error.message : String(error);
     console.error("Hindsight recall error:", errMessage);

@@ -88,7 +88,7 @@ Return ONLY a single valid JSON object strictly conforming to this schema (no ex
 
   try {
     const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: config.groqModel,
       messages: [
         {
           role: "system",

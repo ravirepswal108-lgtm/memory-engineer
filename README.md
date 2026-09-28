@@ -10,7 +10,7 @@ When a complex equipment anomaly occurs, engineers submit observed telemetry and
 
 1. **Intake**: Validates equipment telemetry (`machineName`, `machineType`, `problem`, `symptoms`, `operatingConditions`, `temperature`, `recentChanges`, `previousActions`).
 2. **Recall**: Queries **Hindsight Cloud** using `@vectorize-io/hindsight-client` to retrieve relevant historical failure memories, past maintenance records, and previous outcome reports.
-3. **Reason**: Passes the incident along with recalled historical memories to **Groq LLM** (`llama-3.3-70b-versatile`). Groq analyzes the incident while distinguishing current telemetry from past experiences.
+3. **Reason**: Passes the incident along with recalled historical memories to **Groq LLM** (`openai/gpt-oss-120b` or configured via `GROQ_MODEL`). Groq analyzes the incident while distinguishing current telemetry from past experiences.
 4. **Retain**: Stores the new diagnosis, recommended checks, and post-repair outcomes back into **Hindsight Cloud**, enabling persistent learning for future incidents.
 
 ---
@@ -47,6 +47,7 @@ HINDSIGHT_API_KEY=your_hindsight_api_key
 HINDSIGHT_BASE_URL=https://api.hindsight.vectorize.io
 HINDSIGHT_BANK_ID=engineering-incidents
 GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=openai/gpt-oss-120b
 ```
 
 ### Security Directives

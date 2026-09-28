@@ -71,6 +71,9 @@ async function runPipelineVerification() {
       hindsightRetainPass = true;
       console.log("3. REAL HINDSIGHT RETAIN TEST: PASS");
 
+      // Wait 2 seconds for Hindsight indexing
+      await new Promise((r) => setTimeout(r, 2000));
+
       // 4. Real Hindsight Recall Test
       const recalledMemoriesA = await recallRelevantIncidents("CNC Spindle Unit VERIFY-001 overheating lubrication cooling airflow");
       if (recalledMemoriesA.length > 0) {
@@ -125,7 +128,7 @@ async function runPipelineVerification() {
         recalledForB = await recallRelevantIncidents("CNC Spindle motor temperature rising overheating");
       }
 
-      const groqResult = await analyzeIncidentWithGroq(syntheticIncidentB, recalledForB);
+      await analyzeIncidentWithGroq(syntheticIncidentB, recalledForB);
       groqConnectionPass = true;
       console.log("7. REAL GROQ CONNECTION TEST: PASS");
 

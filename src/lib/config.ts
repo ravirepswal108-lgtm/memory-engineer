@@ -10,6 +10,7 @@ export interface ServerConfig {
   hindsightBaseUrl: string;
   hindsightBankId: string;
   groqApiKey: string;
+  groqModel: string;
 }
 
 export function getServerConfig(): ServerConfig {
@@ -21,12 +22,14 @@ export function getServerConfig(): ServerConfig {
   const hindsightBaseUrl = process.env.HINDSIGHT_BASE_URL || "https://api.hindsight.vectorize.io";
   const hindsightBankId = process.env.HINDSIGHT_BANK_ID || "engineering-incidents";
   const groqApiKey = process.env.GROQ_API_KEY || "";
+  const groqModel = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 
   return {
     hindsightApiKey,
     hindsightBaseUrl,
     hindsightBankId,
     groqApiKey,
+    groqModel,
   };
 }
 
