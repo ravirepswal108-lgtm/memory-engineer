@@ -61,7 +61,7 @@ export async function recallRelevantIncidents(query: string): Promise<RecalledMe
       ? ((rawResponse as Record<string, unknown>).results as unknown[])
       : [];
 
-    return items.map((item: unknown) => {
+    const parsedMemories = items.map((item: unknown) => {
       if (typeof item === "string") {
         return { content: item };
       }
@@ -95,6 +95,15 @@ export async function recallRelevantIncidents(query: string): Promise<RecalledMe
       }
       return { content: String(item) };
     });
+
+    // Safe diagnostic log without sensitive secrets/keys
+    const types = [...new Set(items.map((i) => (typeof i === "object" && i !== null ? (i as Record<string, unknown>).type : "unknown")))];
+    console.log(`[HINDSIGHT DIAGNOSTIC] recall completed | count: ${parsedMemories.length} | types: ${JSON.stringify(types)}`);
+    if (parsedMemories.length > 0) {
+      console.log(`[HINDSIGHT DIAGNOSTIC] top recall preview: "${parsedMemories[0].content.slice(0, 80)}..."`);
+    }
+
+    return parsedMemories;
   } catch (error: unknown) {
     const errMessage = error instanceof Error ? error.message : String(error);
     console.error("Hindsight recall error:", errMessage);
@@ -137,7 +146,7 @@ Uncertainty: ${analysis.uncertaintyExplanation}
 
   try {
     const client = getHindsightClient();
-    await client.retain(config.hindsightBankId, memoryContent, {
+    const retainRes = await client.retain(config.hindsightBankId, memoryContent, {
       timestamp: new Date(),
       context: "engineering equipment incident",
       metadata: {
@@ -147,6 +156,7 @@ Uncertainty: ${analysis.uncertaintyExplanation}
         confidenceScore: String(analysis.confidenceScore ?? 0.8),
       },
     });
+    console.log(`[HINDSIGHT DIAGNOSTIC] retain incident completed | items_count: ${retainRes?.items_count ?? 1}`);
   } catch (error: unknown) {
     const errMessage = error instanceof Error ? error.message : String(error);
     console.error("Hindsight retain incident error:", errMessage);
