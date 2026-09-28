@@ -1,6 +1,6 @@
 import { HindsightClient } from "@vectorize-io/hindsight-client";
 import { getServerConfig } from "@/lib/config";
-import { RecalledMemory } from "@/types/incident";
+import { EngineeringIncident, RecalledMemory, StructuredIncidentAnalysis, IncidentOutcomeRecord } from "@/types/incident";
 
 let instance: HindsightClient | null = null;
 
@@ -13,7 +13,7 @@ export function getHindsightClient(): HindsightClient {
     const config = getServerConfig();
     instance = new HindsightClient({
       baseUrl: config.hindsightBaseUrl,
-      apiKey: config.hindsightApiKey,
+      apiKey: config.hindsightApiKey || undefined,
       userAgent: "memory-engineer-agent/1.0",
     });
   }
@@ -21,14 +21,20 @@ export function getHindsightClient(): HindsightClient {
   return instance;
 }
 
-export async function recallIncidentMemories(query: string): Promise<RecalledMemory[]> {
-  const client = getHindsightClient();
+/**
+ * Recall relevant historical engineering memories from Hindsight Cloud
+ */
+export async function recallRelevantIncidents(query: string): Promise<RecalledMemory[]> {
   const config = getServerConfig();
+  if (!config.hindsightBankId) {
+    console.warn("HINDSIGHT_BANK_ID is not configured. Returning empty memories.");
+    return [];
+  }
 
   try {
+    const client = getHindsightClient();
     const results = await client.recall(config.hindsightBankId, query);
 
-    // Normalize response from client
     if (Array.isArray(results)) {
       return results.map((item: unknown) => {
         if (typeof item === "string") {
@@ -48,41 +54,99 @@ export async function recallIncidentMemories(query: string): Promise<RecalledMem
     }
 
     return [];
-  } catch (error) {
-    console.error("Hindsight recall error:", error);
-    throw error;
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : String(error);
+    console.error("Hindsight recall error:", errMessage);
+    // Handle API errors gracefully and return empty memories so pipeline degrades safely
+    return [];
   }
 }
 
-export async function storeIncidentMemory(
-  content: string,
-  context?: string,
-  metadata?: Record<string, string>
+/**
+ * Retain an engineering incident and its analysis in Hindsight Cloud
+ */
+export async function retainIncident(
+  incident: EngineeringIncident,
+  analysis: StructuredIncidentAnalysis
 ): Promise<void> {
-  const client = getHindsightClient();
   const config = getServerConfig();
+  if (!config.hindsightBankId) {
+    console.warn("HINDSIGHT_BANK_ID is not configured. Skipping retain.");
+    return;
+  }
+
+  const memoryContent = `
+[INCIDENT LOG]
+Machine: ${incident.machineName} (${incident.machineType})
+Problem: ${incident.problem}
+Symptoms: ${incident.symptoms.join(", ")}
+Operating Conditions: ${incident.operatingConditions || "Standard"}
+Temperature: ${incident.temperature || "N/A"}
+Recent Changes: ${incident.recentChanges || "None"}
+Previous Actions: ${incident.previousActions || "None"}
+
+[ENGINEERING ANALYSIS & DIAGNOSIS]
+Summary: ${analysis.incidentSummary}
+Possible Causes: ${analysis.possibleCauses.join("; ")}
+Recommended Checks: ${analysis.recommendedChecks.join("; ")}
+Recommended Actions: ${analysis.recommendedActions.join("; ")}
+Confidence: ${analysis.confidenceExplanation}
+Uncertainty: ${analysis.uncertaintyExplanation}
+`.trim();
 
   try {
+    const client = getHindsightClient();
+    await client.retain(config.hindsightBankId, memoryContent, {
+      timestamp: new Date(),
+      context: `Incident Analysis for ${incident.machineName} (${incident.machineType})`,
+      metadata: {
+        machineName: incident.machineName,
+        machineType: incident.machineType,
+        problem: incident.problem,
+        confidenceScore: String(analysis.confidenceScore ?? 0.8),
+      },
+    });
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : String(error);
+    console.error("Hindsight retain incident error:", errMessage);
+    // Log error, do not break caller execution
+  }
+}
+
+/**
+ * Retain a post-repair resolution outcome in Hindsight Cloud
+ */
+export async function retainOutcome(
+  outcome: IncidentOutcomeRecord
+): Promise<void> {
+  const config = getServerConfig();
+  if (!config.hindsightBankId) {
+    console.warn("HINDSIGHT_BANK_ID is not configured. Skipping outcome retain.");
+    return;
+  }
+
+  const content = `
+[POST-REPAIR OUTCOME RECORD]
+Machine Name: ${outcome.machineName}
+Diagnosis Addressed: ${outcome.diagnosis}
+Recommended Action Executed: ${outcome.recommendedAction}
+Actual Repair Outcome: ${outcome.actualOutcome}
+Resolution Success: ${outcome.success ? "SUCCESSFUL" : "UNSUCCESSFUL"}
+Notes: ${outcome.notes || "None"}
+`.trim();
+
+  try {
+    const client = getHindsightClient();
     await client.retain(config.hindsightBankId, content, {
       timestamp: new Date(),
-      context: context || "Engineering Incident Resolution",
-      metadata,
+      context: `Resolution Outcome for ${outcome.machineName}`,
+      metadata: {
+        machineName: outcome.machineName,
+        success: String(outcome.success),
+      },
     });
-  } catch (error) {
-    console.error("Hindsight retain error:", error);
-    throw error;
-  }
-}
-
-export async function reflectOnIncidents(query: string): Promise<string> {
-  const client = getHindsightClient();
-  const config = getServerConfig();
-
-  try {
-    const response = await client.reflect(config.hindsightBankId, query);
-    return typeof response === "string" ? response : JSON.stringify(response);
-  } catch (error) {
-    console.error("Hindsight reflect error:", error);
-    throw error;
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : String(error);
+    console.error("Hindsight retain outcome error:", errMessage);
   }
 }

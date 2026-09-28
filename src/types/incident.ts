@@ -1,15 +1,18 @@
 /**
- * Domain types for Memory Engineer - AI Engineering Incident Intelligence
+ * Domain types for Memory Engineer - AI Engineering Incident Intelligence Agent
  */
 
 export interface EngineeringIncident {
   id?: string;
-  equipmentId: string;
-  equipmentType: string;
-  title: string;
+  machineName: string;
+  machineType: string;
+  problem: string;
   symptoms: string[];
   operatingConditions?: string;
-  errorCodes?: string[];
+  temperature?: string;
+  recentChanges?: string;
+  previousActions?: string;
+  additionalNotes?: string;
   timestamp?: string;
 }
 
@@ -20,27 +23,75 @@ export interface RecalledMemory {
   metadata?: Record<string, unknown>;
 }
 
-export interface IncidentAnalysis {
-  rootCauseAnalysis: string;
-  diagnosticSteps: string[];
+export interface HistoricalMatch {
+  summary: string;
+  relevanceReason: string;
+}
+
+export interface StructuredIncidentAnalysis {
+  incidentSummary: string;
+  possibleCauses: string[];
+  historicalMatches: HistoricalMatch[];
+  recommendedChecks: string[];
   recommendedActions: string[];
-  confidenceScore: number;
-  historicalContextUsed: string[];
+  confidenceExplanation: string;
+  uncertaintyExplanation: string;
+  relevantMemoriesUsed: string[];
+  confidenceScore?: number;
 }
 
 export interface IncidentPipelineResult {
   incident: EngineeringIncident;
   recalledMemories: RecalledMemory[];
-  analysis: IncidentAnalysis;
+  analysis: StructuredIncidentAnalysis;
   retainedMemoryId?: string;
 }
 
 export interface IncidentOutcomeRecord {
-  incidentId: string;
-  equipmentId: string;
+  incidentId?: string;
+  machineName: string;
+  machineType?: string;
   diagnosis: string;
   recommendedAction: string;
   actualOutcome: string;
   success: boolean;
   notes?: string;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+}
+
+export function validateIncidentInput(data: unknown): ValidationResult {
+  const errors: string[] = [];
+
+  if (!data || typeof data !== "object") {
+    return { isValid: false, errors: ["Invalid incident payload: must be an object."] };
+  }
+
+  const payload = data as Partial<EngineeringIncident>;
+
+  if (!payload.machineName || typeof payload.machineName !== "string" || !payload.machineName.trim()) {
+    errors.push("Field 'machineName' is required and must be a non-empty string.");
+  }
+
+  if (!payload.machineType || typeof payload.machineType !== "string" || !payload.machineType.trim()) {
+    errors.push("Field 'machineType' is required and must be a non-empty string.");
+  }
+
+  if (!payload.problem || typeof payload.problem !== "string" || !payload.problem.trim()) {
+    errors.push("Field 'problem' is required and must be a non-empty string.");
+  }
+
+  if (!Array.isArray(payload.symptoms) || payload.symptoms.length === 0) {
+    errors.push("Field 'symptoms' is required and must be a non-empty array of strings.");
+  } else if (!payload.symptoms.every((s) => typeof s === "string" && s.trim())) {
+    errors.push("All items in 'symptoms' must be non-empty strings.");
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
 }

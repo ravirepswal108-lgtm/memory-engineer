@@ -1,5 +1,5 @@
 import { EngineeringIncident, IncidentPipelineResult, IncidentOutcomeRecord } from "@/types/incident";
-import { recallIncidentMemories, storeIncidentMemory } from "./hindsight";
+import { recallRelevantIncidents, retainIncident, retainOutcome } from "./hindsight";
 import { analyzeIncidentWithGroq } from "./groq";
 
 /**
@@ -12,33 +12,16 @@ import { analyzeIncidentWithGroq } from "./groq";
 export async function processIncidentPipeline(
   incident: EngineeringIncident
 ): Promise<IncidentPipelineResult> {
-  const query = `${incident.equipmentType} ${incident.title} ${incident.symptoms.join(" ")} ${incident.errorCodes?.join(" ") || ""}`.trim();
+  const query = `${incident.machineType} ${incident.machineName} ${incident.problem} ${incident.symptoms.join(" ")}`.trim();
 
   // 1. Recall historical memories
-  const recalledMemories = await recallIncidentMemories(query);
+  const recalledMemories = await recallRelevantIncidents(query);
 
   // 2. Perform AI analysis using Groq
   const analysis = await analyzeIncidentWithGroq(incident, recalledMemories);
 
   // 3. Store the new incident & diagnosis back into Hindsight
-  const memoryContent = `
-Equipment: ${incident.equipmentType} (${incident.equipmentId})
-Title: ${incident.title}
-Symptoms: ${incident.symptoms.join(", ")}
-Error Codes: ${incident.errorCodes?.join(", ") || "None"}
-Diagnosis / Root Cause: ${analysis.rootCauseAnalysis}
-Recommended Action: ${analysis.recommendedActions.join("; ")}
-`.trim();
-
-  await storeIncidentMemory(
-    memoryContent,
-    `Incident Investigation: ${incident.equipmentId}`,
-    {
-      equipmentId: incident.equipmentId,
-      equipmentType: incident.equipmentType,
-      confidenceScore: String(analysis.confidenceScore),
-    }
-  );
+  await retainIncident(incident, analysis);
 
   return {
     incident,
@@ -53,22 +36,5 @@ Recommended Action: ${analysis.recommendedActions.join("; ")}
 export async function recordIncidentOutcome(
   outcome: IncidentOutcomeRecord
 ): Promise<void> {
-  const content = `
-Incident Outcome Record for ${outcome.equipmentId}:
-Diagnosis: ${outcome.diagnosis}
-Recommended Action: ${outcome.recommendedAction}
-Actual Outcome: ${outcome.actualOutcome}
-Success: ${outcome.success ? "YES" : "NO"}
-Notes: ${outcome.notes || "None"}
-`.trim();
-
-  await storeIncidentMemory(
-    content,
-    `Post-Repair Resolution Outcome: ${outcome.equipmentId}`,
-    {
-      incidentId: outcome.incidentId,
-      equipmentId: outcome.equipmentId,
-      success: String(outcome.success),
-    }
-  );
+  await retainOutcome(outcome);
 }

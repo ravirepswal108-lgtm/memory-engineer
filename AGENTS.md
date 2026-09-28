@@ -7,35 +7,34 @@ It assists reliability engineers and equipment operators by analyzing engineerin
 ## Key Architecture & Directory Structure
 ```
 ├── src/
-│   ├── app/                    # Next.js App Router (UI components & pages)
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── incident-analysis/route.ts  # Memory recall -> Groq reasoning -> Hindsight retain
+│   │   │   └── incident-outcome/route.ts   # Post-repair outcome retention in Hindsight
 │   │   ├── layout.tsx
-│   │   ├── page.tsx
+│   │   ├── page.tsx                        # Incident intelligence dashboard UI
 │   │   └── globals.css
-│   ├── lib/                    # Core configuration utilities
-│   │   └── config.ts           # Server-side environment key validation & security
-│   ├── services/               # Server-side domain services
-│   │   ├── hindsight.ts        # Hindsight Cloud client wrapper (@vectorize-io/hindsight-client)
-│   │   ├── groq.ts             # Groq API client integration (groq-sdk)
-│   │   └── incident.ts         # End-to-end incident intelligence workflow
-│   └── types/                  # Domain type definitions
-│       └── incident.ts         # Incident, Memory, Analysis, and Outcome interfaces
-├── .env.example                # Example environment variable file
-├── README.md                   # Project documentation & setup instructions
-└── AGENTS.md                   # Agent architecture rules & guidelines
+│   ├── lib/
+│   │   └── config.ts                      # Secure server-side environment key validation
+│   ├── services/
+│   │   ├── hindsight.ts                   # @vectorize-io/hindsight-client wrapper (retain, recall)
+│   │   ├── groq.ts                        # groq-sdk integration (llama-3.3-70b-versatile)
+│   │   └── incident.ts                    # Core pipeline orchestration logic
+│   └── types/
+│       └── incident.ts                    # Incident interfaces & validateIncidentInput schema
+├── tests/
+│   └── incident.test.ts                   # Unit & integration test suite
+├── .env.example                           # Example environment variable template
+├── README.md                              # Complete setup & API documentation
+└── AGENTS.md                              # Agent architecture rules & guidelines
 ```
 
-## Security & Architecture Rules
+## Security & Architectural Rules
 1. **API Key Isolation**:
    - `HINDSIGHT_API_KEY`, `HINDSIGHT_BANK_ID`, and `GROQ_API_KEY` must **NEVER** be exposed to the browser or prefixed with `NEXT_PUBLIC_`.
    - Access API clients exclusively from server components, server actions, or API route handlers.
 2. **Hindsight Integration**:
-   - Use the official `@vectorize-io/hindsight-client` library.
-   - Core API operations used:
-     - `recall(bankId, query)`: Search historical incident memories.
-     - `retain(bankId, content, options)`: Store new incident diagnoses and post-repair outcomes.
-     - `reflect(bankId, query)`: Synthesize contextual opinions or historical trends from memory banks.
+   - Use official `@vectorize-io/hindsight-client`.
+   - Operations: `recall(bankId, query)` and `retain(bankId, content, options)`.
 3. **Groq Integration**:
-   - Use `groq-sdk` with structured output requests (e.g. `response_format: { type: "json_object" }`).
-   - Standard model for reasoning: `llama-3.3-70b-versatile`.
-4. **Vercel Compatibility**:
-   - Keep code strictly Vercel serverless compatible.
+   - Use `groq-sdk` with `llama-3.3-70b-versatile` and structured JSON response mode.
