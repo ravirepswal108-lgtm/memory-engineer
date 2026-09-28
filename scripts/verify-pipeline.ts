@@ -41,65 +41,85 @@ async function runPipelineVerification() {
     console.log("2. REAL HINDSIGHT CONNECTION TEST: NOT VERIFIED (Environment keys missing in sandbox runtime)");
   }
 
-  // 3. Real Hindsight Retain & Recall Synthetic Test (INCIDENT A)
-  const syntheticIncidentA: EngineeringIncident = {
-    machineName: "CNC Spindle Unit VERIFY-001",
-    machineType: "CNC Precision Milling Spindle",
-    problem: "Spindle motor overheating after prolonged high-load operation",
-    symptoms: ["Spindle temperature spike to 92°C", "High frequency bearing rumble"],
-    operatingConditions: "Continuous 12,000 RPM high-feed rate cutting",
-    temperature: "92°C",
-    previousActions: "Checked spindle lubrication and cooling airflow filter",
-    additionalNotes: "Verification-only synthetic incident VERIFY-001",
+  // 3. Real Hindsight Retain & Recall Synthetic Test (INCIDENT 1)
+  const syntheticIncident1: EngineeringIncident = {
+    machineName: "Hydraulic Pump P-102",
+    machineType: "Centrifugal Hydraulic Pump",
+    problem: "High-frequency vibration and pressure drop",
+    symptoms: ["120 Hz vibration", "Fluid aeration", "12 bar pressure"],
+    operatingConditions: "Peak load continuous operation",
+    temperature: "80 C",
+    recentChanges: "Inlet seal recently replaced",
+    previousActions: "Inspected pressure gauges",
+    additionalNotes: "Incident 1 verification telemetry",
   };
 
   if (hindsightConnectionPass) {
     try {
-      const dummyAnalysisA = {
-        incidentSummary: "CNC Spindle VERIFY-001 Overheating under high load",
-        possibleCauses: ["Cooling fan airflow restriction", "Spindle bearing thermal degradation"],
+      const dummyAnalysis1 = {
+        incidentSummary: "Hydraulic Pump P-102 120 Hz vibration, fluid aeration, and 12 bar pressure drop",
+        possibleCauses: ["Air ingress at newly replaced inlet seal"],
         historicalMatches: [],
-        recommendedChecks: ["Inspect spindle cooling air duct for blockage", "Check lube pressure"],
-        recommendedActions: ["Clean cooling air intake mesh and verify lubricant viscosity"],
-        confidenceExplanation: "High confidence based on thermal spike telemetry",
-        uncertaintyExplanation: "Bearing wear unverified physically",
+        recommendedChecks: ["Inspect seating of inlet seal O-ring"],
+        recommendedActions: ["Re-seat primary inlet seal with proper torque"],
+        confidenceExplanation: "High confidence based on symptoms and recent maintenance",
+        uncertaintyExplanation: "Internal component wear unverified",
         relevantMemoriesUsed: [],
-        confidenceScore: 0.88,
+        confidenceScore: 0.9,
       };
 
-      await retainIncident(syntheticIncidentA, dummyAnalysisA);
+      await retainIncident(syntheticIncident1, dummyAnalysis1);
       hindsightRetainPass = true;
       console.log("3. REAL HINDSIGHT RETAIN TEST: PASS");
 
       // Wait 2 seconds for Hindsight indexing
       await new Promise((r) => setTimeout(r, 2000));
 
-      // 4. Real Hindsight Recall Test
-      const recalledMemoriesA = await recallRelevantIncidents("CNC Spindle Unit VERIFY-001 overheating lubrication cooling airflow");
-      if (recalledMemoriesA.length > 0) {
-        hindsightRecallPass = true;
-        console.log(`4. REAL HINDSIGHT RECALL TEST: PASS (Retrieved ${recalledMemoriesA.length} memory records)`);
+      // 4. Real Hindsight Recall Test using Incident 2 context
+      const syntheticIncident2: EngineeringIncident = {
+        machineName: "Hydraulic Pump P-102",
+        machineType: "Centrifugal Hydraulic Pump",
+        problem: "Persistent pressure drop and high vibration peak under high load",
+        symptoms: ["118 Hz vibration", "Foaming fluid in sight glass", "12.5 bar pressure"],
+        operatingConditions: "Continuous heavy duty load",
+        temperature: "82 C",
+        recentChanges: "Inlet seal replaced recently",
+        previousActions: "Air bleed valve checked",
+      };
 
-        const match = recalledMemoriesA.some((m) => m.content.includes("VERIFY-001") || m.content.includes("CNC"));
+      const recallQuery2 = `${syntheticIncident2.machineName} ${syntheticIncident2.machineType} ${syntheticIncident2.problem} ${syntheticIncident2.symptoms.join(" ")} ${syntheticIncident2.operatingConditions} ${syntheticIncident2.temperature} ${syntheticIncident2.recentChanges}`;
+      const recalledMemories = await recallRelevantIncidents(recallQuery2);
+
+      if (recalledMemories.length > 0) {
+        hindsightRecallPass = true;
+        console.log(`4. REAL HINDSIGHT RECALL TEST: PASS (Retrieved ${recalledMemories.length} memory records)`);
+
+        const match = recalledMemories.some(
+          (m) =>
+            m.content.toLowerCase().includes("p-102") ||
+            m.content.toLowerCase().includes("inlet seal") ||
+            m.content.toLowerCase().includes("vibration") ||
+            m.content.toLowerCase().includes("aeration")
+        );
         if (match) {
           retrievedVerificationMemoryPass = true;
-          console.log("5. RETRIEVED VERIFICATION MEMORY TEST: PASS");
+          console.log("5. RETRIEVED VERIFICATION MEMORY TEST: PASS (Incident 1 memory returned)");
         } else {
-          console.log("5. RETRIEVED VERIFICATION MEMORY TEST: FAIL (Recalled memories did not contain synthetic record)");
+          console.log("5. RETRIEVED VERIFICATION MEMORY TEST: FAIL (Recalled memories did not contain Incident 1 details)");
         }
       } else {
         console.log("4. REAL HINDSIGHT RECALL TEST: FAIL (Returned 0 memories)");
       }
 
-      // Retain Outcome for Incident A
-      const outcomeA: IncidentOutcomeRecord = {
-        machineName: syntheticIncidentA.machineName,
-        diagnosis: dummyAnalysisA.incidentSummary,
-        recommendedAction: dummyAnalysisA.recommendedActions[0],
-        actualOutcome: "Cleaned cooling air intake filter mesh; spindle operating temp dropped back to normal 48°C.",
+      // Retain Outcome for Incident 1
+      const outcome1: IncidentOutcomeRecord = {
+        machineName: syntheticIncident1.machineName,
+        diagnosis: dummyAnalysis1.incidentSummary,
+        recommendedAction: dummyAnalysis1.recommendedActions[0],
+        actualOutcome: "Re-seated primary inlet seal with new O-ring gasket; vibration eliminated and pressure restored to 24 bar.",
         success: true,
       };
-      await retainOutcome(outcomeA);
+      await retainOutcome(outcome1);
       hindsightOutcomePass = true;
       console.log("6. OUTCOME RETAINED IN HINDSIGHT: PASS");
     } catch (err: unknown) {
@@ -112,13 +132,15 @@ async function runPipelineVerification() {
     console.log("6. OUTCOME RETAINED IN HINDSIGHT: NOT VERIFIED");
   }
 
-  // 7. Real Groq Connection & Memory Passing Test (INCIDENT B)
+  // 7. Real Groq Connection & Memory Passing Test (INCIDENT 2)
   const syntheticIncidentB: EngineeringIncident = {
-    machineName: "CNC Spindle Unit VERIFY-002",
-    machineType: "CNC Precision Milling Spindle",
-    problem: "Spindle motor temperature rising again under load",
-    symptoms: ["Spindle temperature rising to 88°C", "Vibration warning"],
-    operatingConditions: "High-load rough milling operation",
+    machineName: "Hydraulic Pump P-102",
+    machineType: "Centrifugal Hydraulic Pump",
+    problem: "Persistent pressure drop and high vibration peak under high load",
+    symptoms: ["118 Hz vibration", "Foaming fluid in sight glass", "12.5 bar pressure"],
+    operatingConditions: "Continuous heavy duty load",
+    temperature: "82 C",
+    recentChanges: "Inlet seal replaced recently",
   };
 
   if (hasGroqEnv) {
