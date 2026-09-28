@@ -18,7 +18,7 @@ It assists reliability engineers and equipment operators by analyzing engineerin
 │   │   └── config.ts                      # Secure server-side environment key validation
 │   ├── services/
 │   │   ├── hindsight.ts                   # @vectorize-io/hindsight-client wrapper (retain, recall)
-│   │   ├── groq.ts                        # groq-sdk integration (llama-3.3-70b-versatile)
+│   │   ├── groq.ts                        # groq-sdk integration (openai/gpt-oss-120b)
 │   │   └── incident.ts                    # Core pipeline orchestration logic
 │   └── types/
 │       └── incident.ts                    # Incident interfaces & validateIncidentInput schema
@@ -37,4 +37,4 @@ It assists reliability engineers and equipment operators by analyzing engineerin
    - Use official `@vectorize-io/hindsight-client`.
    - Operations: `recall(bankId, query)` and `retain(bankId, content, options)`.
 3. **Groq Integration**:
-   - Use `groq-sdk` with `llama-3.3-70b-versatile` and structured JSON response mode.
+   - Use `groq-sdk` with `openai/gpt-oss-120b` (configurable via `GROQ_MODEL`) and structured JSON response mode.
