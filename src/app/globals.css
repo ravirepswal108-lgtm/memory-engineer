@@ -2,7 +2,60 @@
 
 @layer base {
   body {
-    background-color: #020617;
-    color: #f8fafc;
+    background-color: #080c14;
+    color: #e2e8f0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   }
+}
+
+/* Control Room Grid & Technical Aesthetics */
+.bg-control-room {
+  background-color: #080c14;
+  background-image:
+    radial-gradient(rgba(30, 41, 59, 0.4) 1px, transparent 1px),
+    linear-gradient(to right, rgba(15, 23, 42, 0.6) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.6) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.panel-card {
+  background: rgba(13, 18, 28, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+}
+
+.panel-card-highlight {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  box-shadow: 0 0 15px -3px rgba(14, 165, 233, 0.15);
+}
+
+/* Subtle glow animations */
+@keyframes pulse-emerald {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.95); }
+}
+
+.animate-pulse-emerald {
+  animation: pulse-emerald 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Custom technical scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0b0f19;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
 }

@@ -25,13 +25,41 @@ export async function POST(request: Request) {
     const recallQuery = `${incident.machineType} ${incident.machineName} ${incident.problem} ${incident.symptoms.join(" ")}`.trim();
 
     // 3. Recall relevant historical memories from Hindsight
-    const recalledMemories = await recallRelevantIncidents(recallQuery);
+    const recallStartTime = new Date().toISOString();
+    let recalledMemories: import("@/types/incident").RecalledMemory[] = [];
+    let hindsightStatusMessage: string | null = null;
+
+    try {
+      recalledMemories = await recallRelevantIncidents(recallQuery);
+    } catch (hindsightError: unknown) {
+      console.error("Hindsight recall service error:", hindsightError);
+      hindsightStatusMessage = "Memory service temporarily unavailable.";
+    }
 
     // 4. Analyze incident using Groq LLM with historical memory context
-    const analysis = await analyzeIncidentWithGroq(incident, recalledMemories);
+    let analysis;
+    try {
+      analysis = await analyzeIncidentWithGroq(incident, recalledMemories);
+    } catch (groqError: unknown) {
+      console.error("Groq reasoning service error:", groqError);
+      return NextResponse.json(
+        {
+          error: "AI reasoning service temporarily unavailable.",
+          message: "AI reasoning service temporarily unavailable.",
+        },
+        { status: 503 }
+      );
+    }
 
     // 5. Retain newly analyzed incident & diagnosis in Hindsight for future learning
-    await retainIncident(incident, analysis);
+    const retainStartTime = new Date().toISOString();
+    let retained = false;
+    try {
+      await retainIncident(incident, analysis);
+      retained = true;
+    } catch (retainError: unknown) {
+      console.error("Hindsight retain service error:", retainError);
+    }
 
     // 6. Return structured engineering result
     return NextResponse.json({
@@ -39,7 +67,13 @@ export async function POST(request: Request) {
       incident,
       recalledMemories,
       analysis,
-      retained: true,
+      retained,
+      hindsightStatusMessage,
+      telemetry: {
+        recallTimestamp: recallStartTime,
+        retainTimestamp: retainStartTime,
+        memoriesRetrievedCount: recalledMemories.length,
+      },
     });
   } catch (error: unknown) {
     const errMessage = error instanceof Error ? error.message : String(error);
@@ -48,8 +82,10 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "Incident analysis failed",
-        message: errMessage.includes("API Key") || errMessage.includes("Groq")
-          ? errMessage
+        message: errMessage.includes("Groq") || errMessage.includes("AI reasoning")
+          ? "AI reasoning service temporarily unavailable."
+          : errMessage.includes("Hindsight")
+          ? "Memory service temporarily unavailable."
           : "An unexpected error occurred while processing the incident analysis.",
       },
       { status: 500 }
