@@ -1,18 +1,18 @@
 import { EngineeringIncident, IncidentPipelineResult, IncidentOutcomeRecord } from "@/types/incident";
-import { recallRelevantIncidents, retainIncident, retainOutcome } from "./hindsight";
+import { recallRelevantIncidents, retainIncident, retainOutcome, buildIncidentRecallQuery } from "./hindsight";
 import { analyzeIncidentWithGroq } from "./groq";
 
 /**
  * End-to-end incident investigation pipeline:
  * 1. Understand incoming incident & symptoms
- * 2. Recall relevant historical memories from Hindsight
+ * 2. Formulate comprehensive recall query & retrieve historical memories from Hindsight
  * 3. Analyze current incident + memories using Groq LLM
  * 4. Retain new incident and diagnosis in Hindsight for future learning
  */
 export async function processIncidentPipeline(
   incident: EngineeringIncident
 ): Promise<IncidentPipelineResult> {
-  const query = `${incident.machineType} ${incident.machineName} ${incident.problem} ${incident.symptoms.join(" ")}`.trim();
+  const query = buildIncidentRecallQuery(incident);
 
   // 1. Recall historical memories
   const recalledMemories = await recallRelevantIncidents(query);

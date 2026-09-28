@@ -32,8 +32,11 @@ export async function analyzeIncidentWithGroq(
 
   const groq = getGroqClient();
 
-  const memoryContextStr = recalledMemories.length > 0
-    ? recalledMemories
+  // Limit memories to top 15 to stay within LLM token/context limits
+  const topMemories = recalledMemories.slice(0, 15);
+
+  const memoryContextStr = topMemories.length > 0
+    ? topMemories
         .map(
           (m, idx) =>
             `--- HISTORICAL MEMORY [${idx + 1}] ---\nContent: ${m.content}${

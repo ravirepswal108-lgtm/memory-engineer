@@ -22,6 +22,26 @@ export function getHindsightClient(): HindsightClient {
 }
 
 /**
+ * Construct a rich recall query from an Engineering Incident containing strong identifying information
+ */
+export function buildIncidentRecallQuery(incident: EngineeringIncident): string {
+  const parts: string[] = [
+    incident.machineName,
+    incident.machineType,
+    incident.problem,
+    incident.symptoms.join(" "),
+  ];
+
+  if (incident.operatingConditions) parts.push(incident.operatingConditions);
+  if (incident.temperature) parts.push(incident.temperature);
+  if (incident.recentChanges) parts.push(incident.recentChanges);
+  if (incident.previousActions) parts.push(incident.previousActions);
+  if (incident.additionalNotes) parts.push(incident.additionalNotes);
+
+  return parts.filter(Boolean).join(" ").trim();
+}
+
+/**
  * Recall relevant historical engineering memories from Hindsight Cloud
  */
 export async function recallRelevantIncidents(query: string): Promise<RecalledMemory[]> {
@@ -48,10 +68,10 @@ export async function recallRelevantIncidents(query: string): Promise<RecalledMe
       if (typeof item === "object" && item !== null) {
         const obj = item as Record<string, unknown>;
         const contentStr =
-          typeof obj.content === "string"
-            ? obj.content
-            : typeof obj.text === "string"
+          typeof obj.text === "string" && obj.text.trim()
             ? obj.text
+            : typeof obj.content === "string" && obj.content.trim()
+            ? obj.content
             : JSON.stringify(obj);
 
         const score =
@@ -68,7 +88,7 @@ export async function recallRelevantIncidents(query: string): Promise<RecalledMe
           content: contentStr,
           relevanceScore: score,
           metadata:
-            typeof obj.metadata === "object"
+            typeof obj.metadata === "object" && obj.metadata !== null
               ? (obj.metadata as Record<string, unknown>)
               : undefined,
         };
@@ -119,7 +139,7 @@ Uncertainty: ${analysis.uncertaintyExplanation}
     const client = getHindsightClient();
     await client.retain(config.hindsightBankId, memoryContent, {
       timestamp: new Date(),
-      context: `Incident Analysis for ${incident.machineName} (${incident.machineType})`,
+      context: "engineering equipment incident",
       metadata: {
         machineName: incident.machineName,
         machineType: incident.machineType,
@@ -160,7 +180,7 @@ Notes: ${outcome.notes || "None"}
     const client = getHindsightClient();
     await client.retain(config.hindsightBankId, content, {
       timestamp: new Date(),
-      context: `Resolution Outcome for ${outcome.machineName}`,
+      context: "engineering equipment incident",
       metadata: {
         machineName: outcome.machineName,
         success: String(outcome.success),
