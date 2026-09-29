@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerConfig } from "@/lib/config";
+import { getServerConfig, describeKeyShape } from "@/lib/config";
 import { recallRelevantIncidentsWithStatus } from "@/services/hindsight";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +22,8 @@ export async function GET(request: Request) {
   return NextResponse.json({
     HINDSIGHT_API_KEY: apiKeyPresent ? "PRESENT" : "MISSING",
     apiKey: apiKeyPresent ? "PRESENT" : "MISSING",
+    // Secret-free shape info (length, first 4 chars, formatting problems) to diagnose "Invalid API key format"
+    apiKeyShape: describeKeyShape(process.env.HINDSIGHT_API_KEY),
     baseUrl: config.hindsightBaseUrl,
     bankId: config.hindsightBankId,
     bankIdFromEnv,

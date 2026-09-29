@@ -83,15 +83,15 @@ export async function recallRelevantIncidentsWithStatus(query: string): Promise<
   memories: RecalledMemory[];
   status: HindsightCallStatus;
 }> {
+  if (!query || !query.trim()) {
+    const err = describeHindsightError("Query is empty");
+    return { memories: [], status: { ok: false, error: err } };
+  }
+
   const config = getServerConfig();
   if (!config.hindsightApiKey || !config.hindsightBankId) {
     const err = describeHindsightError("HINDSIGHT_API_KEY or HINDSIGHT_BANK_ID is missing");
     console.warn(err);
-    return { memories: [], status: { ok: false, error: err } };
-  }
-
-  if (!query || !query.trim()) {
-    const err = describeHindsightError("Query is empty");
     return { memories: [], status: { ok: false, error: err } };
   }
 
