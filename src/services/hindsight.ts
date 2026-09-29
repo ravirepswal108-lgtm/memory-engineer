@@ -155,6 +155,13 @@ export async function recallRelevantIncidentsWithStatus(query: string): Promise<
     return { memories: parsedMemories.slice(0, MAX_RECALLED_MEMORIES), status: { ok: true } };
   } catch (error: unknown) {
     const errMessage = describeHindsightError(error);
+    // A brand-new bank does not exist until the first retain creates it.
+    // That is "no memories yet", not a failure.
+    const statusCode = (error as { statusCode?: number } | null)?.statusCode;
+    if (statusCode === 404 && /bank/i.test(errMessage) && /not found/i.test(errMessage)) {
+      console.log("[HINDSIGHT] recall: bank does not exist yet (first incident) -> 0 memories");
+      return { memories: [], status: { ok: true } };
+    }
     console.error("Hindsight recall error:", errMessage);
     return { memories: [], status: { ok: false, error: errMessage } };
   }
