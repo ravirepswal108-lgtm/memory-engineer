@@ -3,6 +3,14 @@
 import { useState } from "react";
 import { EngineeringIncident, RecalledMemory, StructuredIncidentAnalysis } from "@/types/incident";
 
+interface HindsightStatus {
+  recallOk?: boolean;
+  recallError?: string;
+  recallCount?: number;
+  retainOk?: boolean;
+  retainError?: string;
+}
+
 export default function Home() {
   const [form, setForm] = useState<EngineeringIncident>({
     machineName: "Hydraulic Pump P-102",
@@ -23,6 +31,7 @@ export default function Home() {
   const [recalledMemories, setRecalledMemories] = useState<RecalledMemory[]>([]);
   const [analysis, setAnalysis] = useState<StructuredIncidentAnalysis | null>(null);
   const [retained, setRetained] = useState<boolean>(false);
+  const [hindsight, setHindsight] = useState<HindsightStatus | null>(null);
 
   // Outcome recording state
   const [outcomeForm, setOutcomeForm] = useState({
@@ -57,6 +66,7 @@ export default function Home() {
     setAnalysis(null);
     setRecalledMemories([]);
     setRetained(false);
+    setHindsight(null);
     setOutcomeSuccess(null);
 
     try {
@@ -74,7 +84,10 @@ export default function Home() {
 
       setRecalledMemories(data.recalledMemories || []);
       setAnalysis(data.analysis || null);
-      setRetained(data.retained || false);
+      setRetained(data.retained === true);
+      if (data.hindsight) {
+        setHindsight(data.hindsight);
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(msg);
@@ -288,6 +301,18 @@ export default function Home() {
                 </h2>
                 <span className="text-[10px] text-cyan-400 font-mono">HINDSIGHT RECALL</span>
               </div>
+
+              {hindsight && hindsight.recallOk === false && hindsight.recallError && (
+                <div className="p-3 border border-rose-800/80 rounded bg-rose-950/40 text-rose-200 text-xs font-semibold">
+                  HINDSIGHT RECALL FAILED: {hindsight.recallError}
+                </div>
+              )}
+
+              {hindsight && hindsight.retainOk === false && hindsight.retainError && (
+                <div className="p-3 border border-rose-800/80 rounded bg-rose-950/40 text-rose-200 text-xs font-semibold">
+                  HINDSIGHT RETAIN FAILED: {hindsight.retainError}
+                </div>
+              )}
 
               {recalledMemories.length === 0 ? (
                 <div className="p-4 bg-slate-950 border border-slate-800 rounded text-xs text-slate-500 italic">

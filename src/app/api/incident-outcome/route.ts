@@ -19,7 +19,13 @@ export async function POST(request: Request) {
       );
     }
 
-    await retainOutcome(record);
+    const retainStatus = await retainOutcome(record);
+    if (!retainStatus.ok) {
+      return NextResponse.json(
+        { error: retainStatus.error || "Failed to store outcome in Hindsight." },
+        { status: 502 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
