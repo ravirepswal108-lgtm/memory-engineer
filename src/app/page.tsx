@@ -324,7 +324,7 @@ export default function Home() {
                     <div key={idx} className="p-3 bg-slate-950 border border-slate-800 rounded text-xs space-y-1">
                       <div className="flex justify-between text-cyan-400 text-[10px]">
                         <span>MEMORY RECORD #{idx + 1}</span>
-                        {mem.relevanceScore && <span>Relevance: {(mem.relevanceScore * 100).toFixed(0)}%</span>}
+                        {typeof mem.relevanceScore === "number" && <span>Match score: {mem.relevanceScore.toFixed(2)}</span>}
                       </div>
                       <p className="text-slate-300 text-[11px] whitespace-pre-line">{mem.content}</p>
                     </div>
