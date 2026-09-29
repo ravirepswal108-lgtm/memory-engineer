@@ -9,6 +9,9 @@ export interface HindsightCallStatus {
 
 let instance: HindsightClient | null = null;
 
+/** Maximum number of recalled memories shown in the UI and passed to Groq. */
+export const MAX_RECALLED_MEMORIES = 5;
+
 export function getHindsightClient(): HindsightClient {
   if (typeof window !== "undefined") {
     throw new Error("HindsightClient can only be instantiated on the server.");
@@ -147,7 +150,9 @@ export async function recallRelevantIncidentsWithStatus(query: string): Promise<
       console.log(`[HINDSIGHT DIAGNOSTIC] top recall preview: "${parsedMemories[0].content.slice(0, 80)}..."`);
     }
 
-    return { memories: parsedMemories, status: { ok: true } };
+    // Hindsight returns results ranked by relevance; keep only the strongest matches
+    // so the UI and the Groq prompt stay focused.
+    return { memories: parsedMemories.slice(0, MAX_RECALLED_MEMORIES), status: { ok: true } };
   } catch (error: unknown) {
     const errMessage = describeHindsightError(error);
     console.error("Hindsight recall error:", errMessage);
