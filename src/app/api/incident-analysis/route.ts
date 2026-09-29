@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { validateIncidentInput, EngineeringIncident } from "@/types/incident";
-import { recallRelevantIncidents, retainIncident, buildIncidentRecallQuery } from "@/services/hindsight";
+import { recallRelevantIncidentsWithStatus, retainIncident, buildIncidentRecallQuery } from "@/services/hindsight";
 import { analyzeIncidentWithGroq } from "@/services/groq";
 
 export async function POST(request: Request) {
@@ -25,13 +25,13 @@ export async function POST(request: Request) {
     const recallQuery = buildIncidentRecallQuery(incident);
 
     // 3. Recall relevant historical memories from Hindsight
-    const recalledMemories = await recallRelevantIncidents(recallQuery);
+    const { memories: recalledMemories, status: recallStatus } = await recallRelevantIncidentsWithStatus(recallQuery);
 
     // 4. Analyze incident using Groq LLM with historical memory context
     const analysis = await analyzeIncidentWithGroq(incident, recalledMemories);
 
     // 5. Retain newly analyzed incident & diagnosis in Hindsight for future learning
-    await retainIncident(incident, analysis);
+    const retainStatus = await retainIncident(incident, analysis);
 
     // 6. Return structured engineering result
     return NextResponse.json({
@@ -39,7 +39,14 @@ export async function POST(request: Request) {
       incident,
       recalledMemories,
       analysis,
-      retained: true,
+      retained: retainStatus.ok,
+      hindsight: {
+        recallOk: recallStatus.ok,
+        recallError: recallStatus.error,
+        recallCount: recalledMemories.length,
+        retainOk: retainStatus.ok,
+        retainError: retainStatus.error,
+      },
     });
   } catch (error: unknown) {
     const errMessage = error instanceof Error ? error.message : String(error);
